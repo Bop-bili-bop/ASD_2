@@ -14,66 +14,55 @@ def read_input_file(filename):
     return u, m, data
 
 
-def count_inversions(arr):
-    def merge_and_count(arr, temp_arr, left, mid, right):
-        i, j, k = left, mid + 1, left
-        inv_count = 0
+def sort_and_count_inv(arr):
+    if len(arr) == 1:
+        return arr, 0
 
-        while i <= mid and j <= right:
-            if arr[i] <= arr[j]:
-                temp_arr[k] = arr[i]
-                i += 1
-            else:
-                temp_arr[k] = arr[j]
-                inv_count += (mid - i + 1)
-                j += 1
-            k += 1
+    mid = len(arr) // 2
+    left_part = arr[:mid]
+    right_part = arr[mid:]
 
-        while i <= mid:
-            temp_arr[k] = arr[i]
+    L, x = sort_and_count_inv(left_part)
+    R, y = sort_and_count_inv(right_part)
+    merged, z = merge_and_count_split_inv(L, R)
+
+    return merged, x + y + z
+
+
+def merge_and_count_split_inv(L, R):
+    n1, n2 = len(L), len(R)
+    L_ext = L + [float('inf')]
+    R_ext = R + [float('inf')]
+
+    i = j = count = 0
+    A = []
+
+    for _ in range(n1 + n2):
+        if L_ext[i] <= R_ext[j]:
+            A.append(L_ext[i])
             i += 1
-            k += 1
-
-        while j <= right:
-            temp_arr[k] = arr[j]
+        else:
+            A.append(R_ext[j])
+            count += n1 - i
             j += 1
-            k += 1
 
-        for i in range(left, right + 1):
-            arr[i] = temp_arr[i]
-
-        return inv_count
-
-    def merge_sort_and_count(arr, temp_arr, left, right):
-        inv_count = 0
-        if left < right:
-            mid = (left + right) // 2
-            inv_count += merge_sort_and_count(arr, temp_arr, left, mid)
-            inv_count += merge_sort_and_count(arr, temp_arr, mid + 1, right)
-            inv_count += merge_and_count(arr, temp_arr, left, mid, right)
-        return inv_count
-
-    return merge_sort_and_count(arr, arr.copy(), 0, len(arr) - 1)
+    return A, count
 
 
 def calculate_similarity(u, m, data, x):
-    reference_order = {movie: rank for rank, movie in enumerate(data[x - 1][1:])}
+    user_index = x - 1
+    order_x = list(range(m))
+    order_x.sort(key=lambda j: data[user_index][j + 1])
+
     similarities = []
 
-    for user in data:
-        if user[0] == x:
+    for i in range(u):
+        if i == user_index:
             continue
 
-        try:
-            user_order = [reference_order[movie] for movie in user[1:]]
-        except KeyError:
-            print(f"Помилка: Невідповідність у вподобаннях користувача {user[0]}")
-            continue
-
-        print(f"Користувач {user[0]}: {user_order}")  # Діагностика
-        inversions = count_inversions(user_order)
-        print(f"Інверсії для {user[0]}: {inversions}")  # Діагностика
-        similarities.append((user[0], inversions))
+        user_order = [data[i][j + 1] for j in order_x]
+        _, inversions = sort_and_count_inv(user_order)
+        similarities.append((i + 1, inversions))
 
     return sorted(similarities, key=lambda pair: pair[1])
 
